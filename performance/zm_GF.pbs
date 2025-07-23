@@ -1,0 +1,12 @@
+#PBS -N train_traditional_pansharpen
+#PBS -o /ghome/fuxy/py_pansharpening-traditional/train_GF.out
+#PBS -e /ghome/fuxy/py_pansharpening-traditional/train_GF.err
+#PBS -l nodes=1:gpus=1:s
+#PBS -r y
+cd $PBS_O_WORKDIR
+echo Time is `date`
+echo Directory is $PWD
+echo This job runs on following nodes:
+cat $PBS_NODEFILE
+cat $PBS_GPUFILE
+startdocker -D /gdata/fuxy/ -P /ghome/fuxy/ -s "python /ghome/fuxy/py_pansharpening-traditional/demo_all_methods_GF.py" bit:5000/yanggang-braimg514 --shm=20g

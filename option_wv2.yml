@@ -1,0 +1,68 @@
+#
+# @Author: yanggang
+#
+
+name: pan_lofn
+algorithm: pan_lofn
+nEpochs: 10000
+gpu_mode: True
+save_best: True
+gpus: [0]
+threads: 8
+stage: 8
+
+enc_blk_nums: [4]
+num_blocks: 3
+
+in_channels: 5
+middle_channels: 8
+out_channels: 4
+n_resblocks: 2
+res_scale: 1
+
+seed: 1234
+checkpoint: /gdata2/yanggang/yg_code/IF_pan_lofn/checkpoint_gppnn_WV2
+data_dir_train: /gdata2/yanggang/datasets/yaogan/WV2_data/train128
+data_dir_eval: /gdata2/yanggang/datasets/yaogan/WV2_data/test128
+source_ms: ms
+source_pan: pan
+
+pretrain:
+  pretrained: Ture
+  pre_sr: pan_lofn_4_07-14-05-20_8stage/Best_best.pth
+  pre_folder: /gdata2/yanggang/yg_code/IF_pan_lofn/checkpoint_gppnn_WV2
+
+test:
+  algorithm: pan_lofn
+  type: test #[test, eval]
+  data_dir: /gdata2/yanggang/datasets/yaogan/WV2_data/test128
+  source_ms: ms
+  source_pan: pan
+  model: pan_lofn_4_07-05-23-30_8stage/Best_best.pth
+  save_dir: /gdata2/yanggang/yg_code/IF_pan_lofn/results/gppnn_WV2
+
+data:
+  upsacle:  4
+  batch_size: 4
+  patch_size: 32
+  data_augmentation: False
+  n_colors: 4
+  rgb_range: 255
+  normalize : False
+
+schedule:
+  lr: 5e-5
+  decay: 20
+  gamma: 0.5
+  optimizer: ADAM #[ADAM, SGD, RMSprop]
+  momentum: 0.9 #SGD momentum
+  beta1: 0.9 #ADAM beta
+  beta2: 0.999 #ADAM beta
+  epsilon: 1e-8 #ADAM epsilon
+  alpha: 0.9 #RMSprop alpha
+  weight_dency: 0
+  gclip: 0.04
+  loss: L1 #[MSE, L1]
+  use_YCbCr: False
+
+
