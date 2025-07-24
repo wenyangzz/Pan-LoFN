@@ -269,12 +269,12 @@ class Solver(BaseSolver):
         try:
             while self.epoch <= self.nEpochs:
                 self.train()
-                # self.eval()
-
-                if self.epoch > 2000 and self.epoch%10 ==0: # 0.8*self.nEpochs:
-                    self.test()
-                    self.save_checkpoint()
-                    print('best_ref_results', self.best_ref_results['deep   '])
+                self.eval()
+                self.save_checkpoint()
+                # if self.epoch > 2000 and self.epoch%10 ==0: # 0.8*self.nEpochs:
+                    # self.eval()
+                    # self.save_checkpoint()
+                    # print('best_ref_results', self.best_ref_results['deep   '])
 
                 self.epoch += 1
         except KeyboardInterrupt:
