@@ -108,7 +108,7 @@ class Solver(BaseSolver):
     def eval(self):
         with tqdm(total=len(self.val_loader), miniters=1,
                 desc='Val Epoch: [{}/{}]'.format(self.epoch, self.nEpochs)) as t1:
-            psnr_list, ssim_list = [], []
+            psnr_list, ssim_list,qnr_list,d_lambda_list,d_s_list = [], [],[],[],[]
             for iteration, batch in enumerate(self.val_loader, 1):
                 
                 ms_image, lms_image, pan_image, bms_image, file = Variable(batch[0]), Variable(batch[1]), Variable(batch[2]), Variable(batch[3]), (batch[4])
