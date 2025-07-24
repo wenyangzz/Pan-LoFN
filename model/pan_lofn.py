@@ -1030,6 +1030,7 @@ class OverlapPatchEmbed(nn.Module):
 
     def forward(self, x):
         x = self.proj(x)
+        
         x = rearrange(x, "b c h w -> b (h w) c").contiguous()
         return x
 
@@ -1124,8 +1125,7 @@ class LoFormer(nn.Module):
             self.winp = WindowPartition(train_size)
             self.winr = WindowReverse(train_size)
 
-        print(window_size_enc, grid_size_enc, train_size)
-
+        print("window_size_enc=", window_size_enc, ", grid_size_enc=", grid_size_enc, ", train_size=", train_size)
         self.return_feat = return_feat
         self.patch_embed = OverlapPatchEmbed(inp_channels, dim)
         self.grid = True
@@ -1806,7 +1806,7 @@ class Pan_LoFN(nn.Module):
 
         self.return_feat = return_feat
         self.patch_embed = OverlapPatchEmbed(4, dim)
-        self.patch_embed2 = OverlapPatchEmbed(1, dim)
+        self.patch_embed2 = OverlapPatchEmbed(1, dim)# for PAN 
 
         base_d_state = 4
         self.mlp_ratio = mlp_ratio
@@ -2108,7 +2108,8 @@ class Pan_LoFN(nn.Module):
         # print(inp_img.shape)
         # inp_img = kornia.geometry.rescale(inp_img, (2, 2))
         B, C, H, W = inp_img.shape
-
+        # print("MS_img shape=",inp_img.shape)
+        # print("Pan_img shape=",inp_img2.shape)
         # x_attn, batch_list = window_partitionx(x, self.window_size_dct)
         # x_attn = self.attn(x_attn)
         # x_attn = window_reversex(x_attn, self.window_size_dct, h, w, batch_list)
@@ -2125,8 +2126,9 @@ class Pan_LoFN(nn.Module):
         # else:
         #     inp_img_ = inp_img
         h, w = inp_img_.shape[-2:]
-
+        #print("patch_embed(inp_img_) shape=",inp_img_.shape)
         inp_enc_level1 = self.patch_embed(inp_img_)
+        #print("patch_embed(inp_img_2_) shape=",inp_img_2_.shape)
         inp_enc_level1_2 = self.patch_embed2(inp_img_2_)
 
         out_enc_level1 = inp_enc_level1

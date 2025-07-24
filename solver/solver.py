@@ -36,7 +36,7 @@ class Solver(BaseSolver):
         lib = importlib.import_module('model.' + net_name)
         # net = lib.Net
         net = lib.Pan_LoFN
-
+    
         self.model = net(
             # cfg
             inp_channels=4,

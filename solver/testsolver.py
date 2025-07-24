@@ -15,6 +15,8 @@ from torch.utils.data import DataLoader
 from torch.autograd import Variable 
 import numpy as np
 from PIL import Image
+from utils.utils import maek_optimizer, make_loss, calculate_psnr, calculate_ssim, save_config, save_net_config
+from performance.f_cal import cal_performance
 os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 
 class Testsolver(BaseSolver):
@@ -22,18 +24,23 @@ class Testsolver(BaseSolver):
         super(Testsolver, self).__init__(cfg)
         
         net_name = self.cfg['algorithm'].lower()
+        enc_num = [4] if self.cfg['enc_blk_nums'] is None else self.cfg['enc_blk_nums']
+        block_num = 2 if self.cfg['num_blocks'] is None else self.cfg['num_blocks']
         lib = importlib.import_module('model.' + net_name)
         
-        net = lib.pan_unfolding
-
+        #net = lib.pan_unfolding
+        net = lib.Pan_LoFN
         self.model = net(
             # cfg
-            T = self.cfg['stage']
+            inp_channels=4,
+            out_channels=4,
+            enc_blk_nums=enc_num,
+            num_blocks=block_num
         )
-
+        #print(self.model)
         print('stage:',self.cfg['stage'])
-
-        # print(self.model)
+        self.log_name = self.cfg['algorithm'] + '_' + str(self.cfg['data']['upsacle']) + '_' + str(self.now_time) + "_" + str(self.cfg['stage']) + 'stage'
+       
 
     def check(self):
         self.cuda = self.cfg['gpu_mode']
@@ -60,35 +67,74 @@ class Testsolver(BaseSolver):
             self.model.load_state_dict(torch.load(self.model_path, map_location=lambda storage, loc: storage)['net'])
             # print(torch.load(self.model_path, map_location=lambda storage, loc: storage)['net'])
 
+    # def test(self):
+    #     print("test phase")
+    #     self.model.eval()
+    #     avg_time = []
+    #     for batch in self.data_loader:
+    #         ms_image, lms_image, pan_image, bms_image, name = Variable(batch[0]), Variable(batch[1]), Variable(batch[2]), Variable(batch[3]), (batch[4])
+    #         print("ms_image.shape",ms_image.shape)
+    #         print("lms_image.shape",lms_image.shape)
+    #         print("pan_image.shape",pan_image.shape)
+    #         if self.cuda:
+    #             ms_image = ms_image.cuda(self.gpu_ids[0])
+    #             lms_image = lms_image.cuda(self.gpu_ids[0])
+    #             pan_image = pan_image.cuda(self.gpu_ids[0])
+    #             bms_image = bms_image.cuda(self.gpu_ids[0])
+
+    #         t0 = time.time()
+    #         with torch.no_grad():
+    #             prediction = self.model(lms_image, bms_image, pan_image)
+    #         t1 = time.time()
+
+    #         if self.cfg['data']['normalize']:
+    #             ms_image = (ms_image+1) /2
+    #             lms_image = (lms_image+1) /2
+    #             pan_image = (pan_image+1) /2
+    #             bms_image = (bms_image+1) /2
+
+    #         # print("===> Processing: %s || Timer: %.4f sec." % (name[0], (t1 - t0)))
+    #         avg_time.append(t1 - t0)
+    #         self.save_img(bms_image.cpu().data, name[0][0:-4]+'_bic.tif', mode='CMYK')
+    #         self.save_img(ms_image.cpu().data, name[0][0:-4]+'_gt.tif', mode='CMYK')
+    #         self.save_img(prediction.cpu().data, name[0][0:-4]+'.tif', mode='CMYK')
+    #     print("===> AVG Timer: %.4f sec." % (np.mean(avg_time)))
+
     def test(self):
-        print("test phase")
-        self.model.eval()
-        avg_time = []
-        for batch in self.data_loader:
-            ms_image, lms_image, pan_image, bms_image, name = Variable(batch[0]), Variable(batch[1]), Variable(batch[2]), Variable(batch[3]), (batch[4])
-            if self.cuda:
-                ms_image = ms_image.cuda(self.gpu_ids[0])
-                lms_image = lms_image.cuda(self.gpu_ids[0])
-                pan_image = pan_image.cuda(self.gpu_ids[0])
-                bms_image = bms_image.cuda(self.gpu_ids[0])
+            print("test phase")
+            #save_config(self.log_name, "test phase")
+            self.model.eval()
+            avg_time = []
+            for batch in self.data_loader:
+                ms_image, lms_image, pan_image, bms_image, name = Variable(batch[0]), Variable(batch[1]), Variable(batch[2]), Variable(batch[3]), (batch[4])
+                if self.cuda:
+                    ms_image = ms_image.cuda(self.gpu_ids[0])
+                    lms_image = lms_image.cuda(self.gpu_ids[0])
+                    pan_image = pan_image.cuda(self.gpu_ids[0])
+                    bms_image = bms_image.cuda(self.gpu_ids[0])
 
-            t0 = time.time()
-            with torch.no_grad():
-                prediction = self.model(lms_image, bms_image, pan_image)
-            t1 = time.time()
+                t0 = time.time()
+                with torch.no_grad():
+                    prediction = self.model(bms_image, pan_image)
+                t1 = time.time()
 
-            if self.cfg['data']['normalize']:
-                ms_image = (ms_image+1) /2
-                lms_image = (lms_image+1) /2
-                pan_image = (pan_image+1) /2
-                bms_image = (bms_image+1) /2
+                if self.cfg['data']['normalize']:
+                    ms_image = (ms_image+1) /2
+                    lms_image = (lms_image+1) /2
+                    pan_image = (pan_image+1) /2
+                    bms_image = (bms_image+1) /2
 
-            # print("===> Processing: %s || Timer: %.4f sec." % (name[0], (t1 - t0)))
-            avg_time.append(t1 - t0)
-            self.save_img(bms_image.cpu().data, name[0][0:-4]+'_bic.tif', mode='CMYK')
-            self.save_img(ms_image.cpu().data, name[0][0:-4]+'_gt.tif', mode='CMYK')
-            self.save_img(prediction.cpu().data, name[0][0:-4]+'.tif', mode='CMYK')
-        print("===> AVG Timer: %.4f sec." % (np.mean(avg_time)))
+                # print("===> Processing: %s || Timer: %.4f sec." % (name[0], (t1 - t0)))
+                avg_time.append(t1 - t0)
+                self.save_img(bms_image.cpu().data, name[0][0:-4]+'_bic.tif', mode='CMYK')
+                self.save_img(ms_image.cpu().data, name[0][0:-4]+'_gt.tif', mode='CMYK')
+                self.save_img(prediction.cpu().data, name[0][0:-4]+'.tif', mode='CMYK')
+            print("===> AVG Timer: %.4f sec." % (np.mean(avg_time)))
+            #save_config(self.log_name, "===> AVG Timer: %.4f sec." % (np.mean(avg_time)))
+            # print(name)
+            #ref_results,no_ref_results = cal_performance(os.path.join(self.cfg['test']['data_dir'], "ms"), os.path.join(self.cfg['test']['data_dir'], "pan"), os.path.join(self.cfg['test']['save_dir'], self.cfg['test']['type']+ "_" + str(self.cfg['stage']) + 'stage', str(self.now_time)), self.log_name)
+           
+
         
     def eval(self):
         print("eval phase")

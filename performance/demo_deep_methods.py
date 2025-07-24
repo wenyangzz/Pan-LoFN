@@ -11,18 +11,18 @@ import os
 from scipy import signal
 
 
-from methods.Bicubic import Bicubic
-from methods.Brovey import Brovey
-from methods.PCA import PCA
-from methods.IHS import IHS
-from methods.SFIM import SFIM
-from methods.GS import GS
-from methods.Wavelet import Wavelet
-from methods.MTF_GLP import MTF_GLP
-from methods.MTF_GLP_HPM import MTF_GLP_HPM
-from methods.GSA import GSA
-from methods.CNMF import CNMF
-from methods.GFPCA import GFPCA
+# from methods.Bicubic import Bicubic
+# from methods.Brovey import Brovey
+# from methods.PCA import PCA
+# from methods.IHS import IHS
+# from methods.SFIM import SFIM
+# from methods.GS import GS
+# from methods.Wavelet import Wavelet
+# from methods.MTF_GLP import MTF_GLP
+# from methods.MTF_GLP_HPM import MTF_GLP_HPM
+# from methods.GSA import GSA
+# from methods.CNMF import CNMF
+# from methods.GFPCA import GFPCA
 from metrics import ref_evaluate, no_ref_evaluate
 from PIL import Image
 
@@ -48,12 +48,14 @@ def cal(ref, noref):
     noreflist.append(np.mean([ih[2] for ih in noref]))
     return reflist, noreflist
 
-path_ms = "/home/z/DataStorage/YangGang_dataset/PAN_sharpen_dataset/GF2_data/test128/ms"
-path_pan = "/home/z/DataStorage/YangGang_dataset/PAN_sharpen_dataset/GF2_data/test128/pan"
-#path_predict = "/ghome/fuxy/DPFN-master-GF2/results/pnn_GF2/test"
-path_predict = "/home/yanggang/code/PAN_unfloding/results/gppnn_GF2/test_4stage/11-09-00-20"
-
-print("The path of predict:", path_predict)
+# path_ms = "/home/z/DataStorage/YangGang_dataset/PAN_sharpen_dataset/GF2_data/test128/ms"
+# path_pan = "/home/z/DataStorage/YangGang_dataset/PAN_sharpen_dataset/GF2_data/test128/pan"
+# #path_predict = "/ghome/fuxy/DPFN-master-GF2/results/pnn_GF2/test"
+# path_predict = "/home/yanggang/code/PAN_unfloding/results/gppnn_GF2/test_4stage/11-09-00-20"
+path_ms = "/root/yaogan/WV2_data/test128/ms"
+path_pan = "/root/yaogan/WV2_data/test128/pan"
+path_predict = "/root/Project/Pan-LoFN/pan-sharpening/result/pan_lofn/test_8stage/07-24-12-13"
+#print("The path of predict:", path_predict)
 
 list_name = []
 for file_path in os.listdir(path_ms):

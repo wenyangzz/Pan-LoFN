@@ -4,7 +4,7 @@
 
 name: pan_lofn
 algorithm: pan_lofn
-nEpochs: 10000
+nEpochs: 2000
 gpu_mode: True
 save_best: True
 gpus: [0]
@@ -21,25 +21,38 @@ n_resblocks: 2
 res_scale: 1
 
 seed: 1234
-checkpoint: /gdata2/yanggang/yg_code/IF_pan_lofn/checkpoint_gppnn_WV2
-data_dir_train: /gdata2/yanggang/datasets/yaogan/WV2_data/train128
-data_dir_eval: /gdata2/yanggang/datasets/yaogan/WV2_data/test128
+# checkpoint: /gdata2/yanggang/yg_code/IF_pan_lofn/checkpoint_gppnn_WV2
+# data_dir_train: /gdata2/yanggang/datasets/yaogan/WV2_data/train128
+# data_dir_eval: /gdata2/yanggang/datasets/yaogan/WV2_data/test128
+checkpoint: pan-sharpening/checkpoint
+#data_dir_train: /root/yaogan/WV2_data/train128
+data_dir_train: /root/yaogan/WV2_data/test128
+data_dir_eval: /root/yaogan/WV2_data/test128
+
 source_ms: ms
 source_pan: pan
 
+# pretrain:
+#   pretrained: Ture
+#   pre_sr: pan_lofn_4_07-14-05-20_8stage/Best_best.pth
+#   pre_folder: /gdata2/yanggang/yg_code/IF_pan_lofn/checkpoint_gppnn_WV2
 pretrain:
-  pretrained: Ture
-  pre_sr: pan_lofn_4_07-14-05-20_8stage/Best_best.pth
-  pre_folder: /gdata2/yanggang/yg_code/IF_pan_lofn/checkpoint_gppnn_WV2
+  pretrained: False
+  pre_sr: ~
+  pre_folder: ~
+
 
 test:
   algorithm: pan_lofn
   type: test #[test, eval]
-  data_dir: /gdata2/yanggang/datasets/yaogan/WV2_data/test128
+  # data_dir: /gdata2/yanggang/datasets/yaogan/WV2_data/test128
+  data_dir: /root/yaogan/WV2_data/test128
   source_ms: ms
   source_pan: pan
-  model: pan_lofn_4_07-05-23-30_8stage/Best_best.pth
-  save_dir: /gdata2/yanggang/yg_code/IF_pan_lofn/results/gppnn_WV2
+  # model: pan_lofn_4_07-05-23-30_8stage/Best_best.pth
+  model: pan_lofn_4_07-23-09-41_8stage/latest.pth
+  #save_dir: /gdata2/yanggang/yg_code/IF_pan_lofn/results/gppnn_WV2
+  save_dir: pan-sharpening/result/pan_lofn/
 
 data:
   upsacle:  4
