@@ -152,11 +152,16 @@ class Solver(BaseSolver):
             self.records['Epoch'].append(self.epoch)
             self.records['PSNR'].append(np.array(psnr_list).mean())
             self.records['SSIM'].append(np.array(ssim_list).mean())
-
-            save_config(self.log_name, 'Val Epoch {}: PSNR={:.4f}, SSIM={:.4f}'.format(self.epoch, self.records['PSNR'][-1],
-                                                                    self.records['SSIM'][-1]))
+            self.records['QNR'].append(np.array(qnr_list).mean())
+            self.records['D_lamda'].append(np.array(d_lambda_list).mean())
+            self.records['D_s'].append(np.array(d_s_list).mean())
+            save_config(self.log_name, 'Val Epoch {}: PSNR={:.4f}, SSIM={:.6f},QNR={:.4f}, DS:{:.4f},D_L:{:.4F}'.format(self.epoch, self.records['PSNR'][-1],
+                                                                    self.records['SSIM'][-1],self.records['QNR'][-1],self.records['D_s'][-1],self.records['D_lamda'][-1]))
             self.writer.add_scalar('PSNR_epoch', self.records['PSNR'][-1], self.epoch)
             self.writer.add_scalar('SSIM_epoch', self.records['SSIM'][-1], self.epoch)
+            self.writer.add_scalar('QNR_epoch', self.records['QNR'][-1], self.epoch)
+            self.writer.add_scalar('D_s_epoch', self.records['D_s'][-1], self.epoch)
+            self.writer.add_scalar('D_lamda_epoch', self.records['D_lamda'][-1], self.epoch)
     
 
     def test(self):
@@ -248,6 +253,17 @@ class Solver(BaseSolver):
             raise Exception("Pretrain path error!")
 
     def save_checkpoint(self):
+        # super(Solver, self).save_checkpoint()
+        # self.ckp['net'] = self.model.state_dict()
+        # self.ckp['optimizer'] = self.optimizer.state_dict()
+        # if not os.path.exists(self.cfg['checkpoint'] + '/' + str(self.log_name)):
+        #     os.mkdir(self.cfg['checkpoint'] + '/' + str(self.log_name))
+        # torch.save(self.ckp, os.path.join(self.cfg['checkpoint'] + '/' + str(self.log_name), 'latest.pth'))
+
+        # if self.cfg['save_best']:
+        #     if self.records['SSIM'] != [] and self.records['SSIM'][-1] == np.array(self.records['SSIM']).max():
+        #         shutil.copy(os.path.join(self.cfg['checkpoint'] + '/' + str(self.log_name), 'latest.pth'),
+        #                     os.path.join(self.cfg['checkpoint'] + '/' + str(self.log_name), 'best.pth'))
         super(Solver, self).save_checkpoint()
         self.ckp['net'] = self.model.state_dict()
         self.ckp['optimizer'] = self.optimizer.state_dict()
@@ -258,7 +274,19 @@ class Solver(BaseSolver):
         if self.cfg['save_best']:
             if self.records['SSIM'] != [] and self.records['SSIM'][-1] == np.array(self.records['SSIM']).max():
                 shutil.copy(os.path.join(self.cfg['checkpoint'] + '/' + str(self.log_name), 'latest.pth'),
-                            os.path.join(self.cfg['checkpoint'] + '/' + str(self.log_name), 'best.pth'))
+                            os.path.join(self.cfg['checkpoint'] + '/' + str(self.log_name), 'bestSSIM.pth'))
+            if self.records['PSNR'] !=[] and self.records['PSNR'][-1]==np.array(self.records['PSNR']).max():
+                shutil.copy(os.path.join(self.cfg['checkpoint'] + '/' + str(self.log_name), 'latest.pth'),
+                            os.path.join(self.cfg['checkpoint'] + '/' + str(self.log_name), 'bestPSNR.pth'))
+            if self.records['QNR'] !=[] and self.records['QNR'][-1]==np.array(self.records['QNR']).max():
+                shutil.copy(os.path.join(self.cfg['checkpoint'] + '/' + str(self.log_name), 'latest.pth'),
+                            os.path.join(self.cfg['checkpoint'] + '/' + str(self.log_name), 'bestQNR.pth'))
+            if self.records['D_lamda'] !=[] and self.records['D_lamda'][-1]==np.array(self.records['D_lamda']).min():
+                shutil.copy(os.path.join(self.cfg['checkpoint'] + '/' + str(self.log_name), 'latest.pth'),
+                            os.path.join(self.cfg['checkpoint'] + '/' + str(self.log_name), 'best_lamda.pth'))
+            if self.records['D_s'] !=[] and self.records['D_s'][-1]==np.array(self.records['D_s']).min():
+                shutil.copy(os.path.join(self.cfg['checkpoint'] + '/' + str(self.log_name), 'latest.pth'),
+                            os.path.join(self.cfg['checkpoint'] + '/' + str(self.log_name), 'bestD_s.pth'))
 
     def run(self):
         self.check_gpu()
@@ -271,11 +299,11 @@ class Solver(BaseSolver):
                 self.train()
                 self.eval()
                 self.save_checkpoint()
-                # if self.epoch > 2000 and self.epoch%10 ==0: # 0.8*self.nEpochs:
-                    # self.eval()
-                    # self.save_checkpoint()
-                    # print('best_ref_results', self.best_ref_results['deep   '])
-
+                #print('best_ref_results', self.best_ref_results['deep   '])
+                # if self.epoch > 100 and self.epoch%10 ==0: 
+                #     self.test()
+                #     self.save_checkpoint()
+                #     print('best_ref_results', self.best_ref_results['deep   '])
                 self.epoch += 1
         except KeyboardInterrupt:
             self.save_checkpoint()
