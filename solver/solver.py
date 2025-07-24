@@ -106,49 +106,69 @@ class Solver(BaseSolver):
             self.writer.add_scalar('Loss_epoch', self.records['Loss'][-1], self.epoch)
 
     def eval(self):
-        with tqdm(total=len(self.val_loader), miniters=1,
+        # with tqdm(total=len(self.val_loader), miniters=1,
+        #         desc='Val Epoch: [{}/{}]'.format(self.epoch, self.nEpochs)) as t1:
+        with tqdm(total=len(self.test_loader), miniters=1,
                 desc='Val Epoch: [{}/{}]'.format(self.epoch, self.nEpochs)) as t1:
             psnr_list, ssim_list,qnr_list,d_lambda_list,d_s_list = [], [],[],[],[]
-            for iteration, batch in enumerate(self.val_loader, 1):
-                
+
+            # for iteration, batch in enumerate(self.val_loader, 1):
+            for iteration, batch in enumerate(self.test_loader, 1):
                 ms_image, lms_image, pan_image, bms_image, file = Variable(batch[0]), Variable(batch[1]), Variable(batch[2]), Variable(batch[3]), (batch[4])
                 if self.cuda:
                     ms_image, lms_image, pan_image, bms_image = ms_image.cuda(self.gpu_ids[0]), lms_image.cuda(self.gpu_ids[0]), pan_image.cuda(self.gpu_ids[0]), bms_image.cuda(self.gpu_ids[0])
 
                 self.model.eval()
                 with torch.no_grad():
-                    y  = self.model(bms_image, pan_image)
-                    # y, u, v  = self.model(lms_image, bms_image, pan_image)
+                    y,mask,gate = self.model(lms_image, bms_image, pan_image)
+                    # y = self.model(lms_image, bms_image, pan_image)
+
                     loss = self.loss(y, ms_image)
 
-                batch_psnr, batch_ssim = [], []
-                y = y[:,0:3,:,:]
-                ms_image=ms_image[:,0:3,:,:]
+                batch_psnr, batch_ssim,batch_qnr,batch_D_lambda,batch_D_s = [], [],[],[],[]
+                fake_img = y[:,:,:,:]
+                # y = y[:,0:3,:,:]
+                # ms_image=ms_image[:,0:3,:,:]
                 for c in range(y.shape[0]):
                     if not self.cfg['data']['normalize']:
                         predict_y = (y[c, ...].cpu().numpy().transpose((1, 2, 0))) * 255
                         ground_truth = (ms_image[c, ...].cpu().numpy().transpose((1, 2, 0))) * 255
+                        pan = (pan_image[c, ...].cpu().numpy().transpose((1, 2, 0))) * 255
+                        l_ms = (lms_image[c, ...].cpu().numpy().transpose((1, 2, 0))) * 255
+                        f_img = (fake_img[c, ...].cpu().numpy().transpose((1, 2, 0))) * 255
                     else:          
                         predict_y = (y[c, ...].cpu().numpy().transpose((1, 2, 0)) + 1) * 127.5
                         ground_truth = (ms_image[c, ...].cpu().numpy().transpose((1, 2, 0)) + 1) * 127.5
-                    psnr = calculate_psnr(predict_y, ground_truth, 255)
-                    ssim = calculate_ssim(predict_y, ground_truth, 255)
+                        pan = (pan_image[c, ...].cpu().numpy().transpose((1, 2, 0)) + 1) * 127.5
+                        l_ms = (lms_image[c, ...].cpu().numpy().transpose((1, 2, 0)) + 1) * 127.5
+                        f_img  =(fake_img[c, ...].cpu().numpy().transpose((1, 2, 0)) + 1) * 127.5
+                    psnr = cpsnr(predict_y, ground_truth)
+                    # psnr = calculate_psnr(predict_y, ground_truth, 255)
+                    # ssim = calculate_ssim(predict_y, ground_truth, 255)
+                    ssim = cssim(predict_y,ground_truth,255)
+                    l_ms = np.uint8(l_ms)
+                    pan = np.uint8(pan)
+                    c_D_lambda, c_D_s, QNR = no_ref_evaluate(f_img,pan,l_ms)
+                    # c_D_s = D_s(f_img,l_ms,pan)
+                    # c_D_lambda = D_lambda(f_img,l_ms)
+                    # QNR = qnr(f_img,l_ms,pan)
                     batch_psnr.append(psnr)
                     batch_ssim.append(ssim)
+                    batch_qnr.append(QNR)
+                    batch_D_s.append(c_D_s)
+                    batch_D_lambda.append(c_D_lambda)
                 avg_psnr = np.array(batch_psnr).mean()
                 avg_ssim = np.array(batch_ssim).mean()
+                avg_qnr = np.array(batch_qnr).mean()
+                avg_d_lambda = np.array(batch_D_lambda).mean()
+                avg_d_s = np.array(batch_D_s).mean()
                 psnr_list.extend(batch_psnr)
                 ssim_list.extend(batch_ssim)
-                # self.best_psnr = max(self.best_psnr, avg_psnr)
-                # self.best_ssim = max(self.best_ssim, avg_ssim)
-                t1.set_postfix_str('Batch loss: {:.4f}, PSNR: {:.4f}/{:.4f}, SSIM: {:.4f}/{:.4f}'.format(loss.item(), avg_psnr, self.best_psnr, avg_ssim, self.best_ssim))
+                qnr_list.extend(batch_qnr)
+                d_s_list.extend(batch_D_s)
+                d_lambda_list.extend(batch_D_lambda)
+                t1.set_postfix_str('n:Batch loss: {:.4f}, PSNR: {:.4f}, SSIM: {:.4f},QNR:{:.4F} DS:{:.4f},D_L:{:.4F}'.format(loss.item(), avg_psnr, avg_ssim,avg_qnr,avg_d_s,avg_d_lambda))
                 t1.update()
-            
-            self.best_psnr = max(self.best_psnr, avg_psnr)
-            self.best_ssim = max(self.best_ssim, avg_ssim)
-            t1.set_postfix_str('Batch loss: {:.4f}, PSNR: {:.4f}/{:.4f}, SSIM: {:.4f}/{:.4f}'.format(loss.item(), avg_psnr, self.best_psnr, avg_ssim, self.best_ssim))
-            t1.update()
-
             self.records['Epoch'].append(self.epoch)
             self.records['PSNR'].append(np.array(psnr_list).mean())
             self.records['SSIM'].append(np.array(ssim_list).mean())
