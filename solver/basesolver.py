@@ -42,7 +42,7 @@ class BaseSolver:
         self.data_loader = DataLoader(self.dataset, shuffle=False, batch_size=1,
                     num_workers=self.num_workers) #self.cfg['threads'])
 
-        self.records = {'Epoch': [], 'PSNR': [], 'SSIM': [], 'Loss': []}
+        self.records = {'Epoch': [], 'PSNR': [], 'SSIM': [], 'Loss': [],'QNR':[],'D_lamda':[],'D_s':[]}
 
         if not os.path.exists(self.checkpoint_dir):
             os.makedirs(self.checkpoint_dir)
